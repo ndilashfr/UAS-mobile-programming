@@ -1,17 +1,69 @@
 import 'package:flutter/material.dart';
-import 'leaderboard.dart'; // Impor untuk navigasi
-import 'profile.dart'; // Impor untuk navigasi
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:intl/intl.dart'; // Pastikan intl sudah ada di pubspec.yaml
 
-class NotificationPage extends StatelessWidget {
+// Navigasi
+import 'leaderboard.dart';
+import 'profile.dart'; // Sesuaikan jika nama file-mu profile_page.dart
+import 'home.dart';
+import 'create_challenge.dart';
+
+class NotificationPage extends StatefulWidget {
   const NotificationPage({super.key});
+
+  @override
+  State<NotificationPage> createState() => _NotificationPageState();
+}
+
+class _NotificationPageState extends State<NotificationPage> {
+  User? _user;
+
+  @override
+  void initState() {
+    super.initState();
+    _user = FirebaseAuth.instance.currentUser;
+  }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: const Color(0xFF1A1A1A),
+
+      // --- APP BAR BERSIH (TANPA TOMBOL TEST) ---
+      appBar: AppBar(
+        backgroundColor: Colors.transparent,
+        elevation: 0,
+        centerTitle: true,
+        automaticallyImplyLeading: false,
+        title: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(Icons.notifications, color: Colors.yellow.shade300, size: 24),
+            const SizedBox(width: 8),
+            const Text(
+              'Notifikasi',
+              style: TextStyle(
+                color: Colors.white,
+                fontSize: 20,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+          ],
+        ),
+      ),
+
+      // --- NAVIGASI BAWAH ---
       floatingActionButtonLocation: FloatingActionButtonLocation.centerDocked,
       floatingActionButton: FloatingActionButton(
-        onPressed: () {},
+        onPressed: () {
+          Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (context) => const CreateChallengePage(),
+            ),
+          );
+        },
         backgroundColor: const Color(0xFF007AFF),
         shape: const CircleBorder(),
         child: const Icon(Icons.add, color: Colors.white),
@@ -26,29 +78,32 @@ class NotificationPage extends StatelessWidget {
             IconButton(
               icon: const Icon(Icons.home, color: Colors.grey),
               onPressed: () {
-                Navigator.popUntil(context, (route) => route.isFirst);
-              },
-            ),
-            IconButton(
-              icon: const Icon(Icons.bar_chart, color: Colors.grey),
-              onPressed: () {
-                // Kembali ke Leaderboard
                 Navigator.pushReplacement(
                   context,
                   PageRouteBuilder(
-                    pageBuilder: (context, animation1, animation2) =>
-                        const LeaderboardPage(),
+                    pageBuilder: (context, a, b) => const HomePage(),
                     transitionDuration: Duration.zero,
                   ),
                 );
               },
             ),
-            const SizedBox(width: 48), // Spasi untuk FAB
             IconButton(
-              icon: const Icon(Icons.notifications, color: Colors.white),
+              icon: const Icon(Icons.bar_chart, color: Colors.grey),
               onPressed: () {
-                // Sudah di halaman ini
+                Navigator.pushReplacement(
+                  context,
+                  PageRouteBuilder(
+                    pageBuilder: (context, a, b) => const LeaderboardPage(),
+                    transitionDuration: Duration.zero,
+                  ),
+                );
               },
+            ),
+            const SizedBox(width: 48),
+            IconButton(
+              // Ikon Putih karena sedang aktif
+              icon: const Icon(Icons.notifications, color: Colors.white),
+              onPressed: () {},
             ),
             IconButton(
               icon: const Icon(Icons.person_outline, color: Colors.grey),
@@ -56,8 +111,7 @@ class NotificationPage extends StatelessWidget {
                 Navigator.pushReplacement(
                   context,
                   PageRouteBuilder(
-                    pageBuilder: (context, animation1, animation2) =>
-                        const ProfilePage(),
+                    pageBuilder: (context, a, b) => const ProfilePage(),
                     transitionDuration: Duration.zero,
                   ),
                 );
@@ -66,76 +120,119 @@ class NotificationPage extends StatelessWidget {
           ],
         ),
       ),
+
+      // --- STREAM BUILDER (DATA NYATA) ---
       body: SafeArea(
-        child: SingleChildScrollView(
-          child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 20.0),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                _buildAppBar(context),
-                const SizedBox(height: 24),
-                _buildNotificationSection(
-                  title: 'Hari ini',
-                  items: [
-                    {
-                      'icon': Icons.task_alt,
-                      'color': Colors.blue,
-                      'title': 'Daily Task Selesai!',
-                      'subtitle': 'Bagus! "Read The Lean Startup" sudah selesai.',
-                      'time': '10:00 AM'
-                    },
-                    {
-                      'icon': Icons.emoji_events,
-                      'color': Colors.yellow.shade600,
-                      'title': 'Peringkatmu Naik!',
-                      'subtitle': 'Kamu naik ke peringkat #5 di leaderboard.',
-                      'time': '09:15 AM'
-                    },
-                  ],
+        child: _user == null
+            ? const Center(
+                child: Text(
+                  'Silakan login',
+                  style: TextStyle(color: Colors.white),
                 ),
-                const SizedBox(height: 24),
-                _buildNotificationSection(
-                  title: 'Kemarin',
-                  items: [
-                    {
-                      'icon': Icons.person_add,
-                      'color': Colors.green,
-                      'title': 'Teman Baru Bergabung',
-                      'subtitle': 'Richard Hendriks menerima undanganmu.',
-                      'time': '04:30 PM'
-                    },
-                  ],
-                ),
-              ],
-            ),
-          ),
-        ),
+              )
+            : StreamBuilder<QuerySnapshot>(
+                stream: FirebaseFirestore.instance
+                    .collection('notifications')
+                    // Filter: Hanya ambil notifikasi milik User yang sedang login
+                    .where('userId', isEqualTo: _user!.uid)
+                    .orderBy('createdAt', descending: true)
+                    .snapshots(),
+                builder: (context, snapshot) {
+                  if (snapshot.connectionState == ConnectionState.waiting) {
+                    return const Center(child: CircularProgressIndicator());
+                  }
+                  if (snapshot.hasError) {
+                    return Center(
+                      child: Text(
+                        'Error: ${snapshot.error}',
+                        style: const TextStyle(color: Colors.red),
+                      ),
+                    );
+                  }
+
+                  if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
+                    return const Center(
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Icon(
+                            Icons.notifications_off,
+                            size: 60,
+                            color: Colors.grey,
+                          ),
+                          SizedBox(height: 16),
+                          Text(
+                            "Belum ada notifikasi.",
+                            style: TextStyle(color: Colors.grey),
+                          ),
+                        ],
+                      ),
+                    );
+                  }
+
+                  // --- LOGIKA UI ---
+                  final List<Map<String, dynamic>> todayItems = [];
+                  final List<Map<String, dynamic>> yesterdayItems = [];
+
+                  final now = DateTime.now();
+                  final todayStart = DateTime(now.year, now.month, now.day);
+
+                  for (var doc in snapshot.data!.docs) {
+                    final data = doc.data() as Map<String, dynamic>;
+                    final Timestamp? ts = data['createdAt'];
+
+                    if (ts == null) continue;
+
+                    final DateTime date = ts.toDate();
+
+                    final itemMap = {
+                      'icon': _getIconFromString(data['iconName']),
+                      'color': _getColorFromString(data['colorName']),
+                      'title': data['title'] ?? 'Tanpa Judul',
+                      'subtitle': data['subtitle'] ?? '',
+                      'time': _formatTime(ts),
+                    };
+
+                    if (date.isAfter(todayStart)) {
+                      todayItems.add(itemMap);
+                    } else {
+                      yesterdayItems.add(itemMap);
+                    }
+                  }
+
+                  return SingleChildScrollView(
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 20.0,
+                        vertical: 10,
+                      ),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          if (todayItems.isNotEmpty)
+                            _buildNotificationSection(
+                              title: 'Hari ini',
+                              items: todayItems,
+                            ),
+
+                          const SizedBox(height: 24),
+
+                          if (yesterdayItems.isNotEmpty)
+                            _buildNotificationSection(
+                              title: 'Sebelumnya',
+                              items: yesterdayItems,
+                            ),
+                        ],
+                      ),
+                    ),
+                  );
+                },
+              ),
       ),
     );
   }
 
-  Widget _buildAppBar(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.only(top: 16.0),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Row(
-            children: [
-              Icon(Icons.notifications, color: Colors.blue.shade300, size: 28),
-              const SizedBox(width: 8),
-              const Text('Notifikasi',
-                  style: TextStyle(
-                      color: Colors.white,
-                      fontSize: 20,
-                      fontWeight: FontWeight.bold)),
-            ],
-          ),
-        ],
-      ),
-    );
-  }
+  // --- WIDGET HELPER ---
 
   Widget _buildNotificationSection({
     required String title,
@@ -147,9 +244,10 @@ class NotificationPage extends StatelessWidget {
         Text(
           title,
           style: TextStyle(
-              color: Colors.grey.shade400,
-              fontSize: 16,
-              fontWeight: FontWeight.w600),
+            color: Colors.grey.shade400,
+            fontSize: 16,
+            fontWeight: FontWeight.w600,
+          ),
         ),
         const SizedBox(height: 16),
         ListView.separated(
@@ -204,15 +302,18 @@ class NotificationPage extends StatelessWidget {
                 Text(
                   title,
                   style: const TextStyle(
-                      color: Colors.white,
-                      fontSize: 16,
-                      fontWeight: FontWeight.w600),
+                    color: Colors.white,
+                    fontSize: 16,
+                    fontWeight: FontWeight.w600,
+                  ),
                 ),
-                const SizedBox(height: 4),
-                Text(
-                  subtitle,
-                  style: TextStyle(color: Colors.grey.shade400, fontSize: 14),
-                ),
+                if (subtitle.isNotEmpty) ...[
+                  const SizedBox(height: 4),
+                  Text(
+                    subtitle,
+                    style: TextStyle(color: Colors.grey.shade400, fontSize: 14),
+                  ),
+                ],
               ],
             ),
           ),
@@ -224,5 +325,38 @@ class NotificationPage extends StatelessWidget {
         ],
       ),
     );
+  }
+
+  // --- LOGIC HELPER (Sesuai data Firestore kamu) ---
+
+  IconData _getIconFromString(String? iconName) {
+    switch (iconName) {
+      case 'emoji_events':
+        return Icons.emoji_events;
+      case 'task_alt':
+        return Icons.task_alt;
+      case 'person_add':
+        return Icons.person_add;
+      default:
+        return Icons.notifications;
+    }
+  }
+
+  Color _getColorFromString(String? colorName) {
+    switch (colorName) {
+      case 'yellow':
+        return Colors.yellow.shade600;
+      case 'blue':
+        return Colors.blue;
+      case 'green':
+        return Colors.green;
+      default:
+        return Colors.grey;
+    }
+  }
+
+  String _formatTime(Timestamp ts) {
+    final DateTime date = ts.toDate();
+    return DateFormat.jm().format(date);
   }
 }

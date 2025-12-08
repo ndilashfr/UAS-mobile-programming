@@ -1,9 +1,12 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
-import 'profile.dart'; // Impor untuk navigasi
-import 'notification.dart'; // <-- TAMBAHKAN IMPOR INI
-import 'create_challenge.dart'; // <-- TAMBAHKAN IMPOR INI
+import 'package:cached_network_image/cached_network_image.dart';
+import 'home.dart';
+import 'profile.dart';
+import 'notification.dart';
+import 'create_challenge.dart';
 
-// 1. Ubah menjadi StatefulWidget
 class LeaderboardPage extends StatefulWidget {
   const LeaderboardPage({super.key});
 
@@ -12,40 +15,72 @@ class LeaderboardPage extends StatefulWidget {
 }
 
 class _LeaderboardPageState extends State<LeaderboardPage> {
-  // 2. Ubah state untuk dropdown menjadi List<Map>
-  final List<Map<String, dynamic>> _challengeOptions = [
-    {
-      'text': 'Tilawah Al-Quran Harian',
-      'icon': Icons.menu_book,
-    },
-    {
-      'text': 'Daily Productivity Task',
-      'icon': Icons.check_circle_outline, // Ikon baru
-    },
-    {
-      'text': 'Weekly Reading Goal',
-      'icon': Icons.bookmark_border_rounded, // Ikon baru
-    },
-  ];
-  // Ganti state dari String menjadi Map
-  late Map<String, dynamic> _selectedChallenge;
+  List<Map<String, dynamic>> _challengeOptions = [];
+  Map<String, dynamic>? _selectedChallenge;
+  bool _isLoadingChallenges = true;
+
+  IconData _getIconForCategory(String category) {
+    if (category.contains('Al-Quran')) return Icons.menu_book;
+    if (category.contains('Productivity')) return Icons.check_circle_outline;
+    if (category.contains('Reading')) return Icons.bookmark_border_rounded;
+    if (category.toLowerCase() == 'ibadah') return Icons.mosque_outlined;
+    if (category.toLowerCase() == 'kesehatan') return Icons.directions_run_outlined;
+    if (category.toLowerCase() == 'produktifitas') return Icons.lightbulb_outline;
+    return Icons.task_alt;
+  }
+
+  Future<void> _fetchChallenges() async {
+    try {
+      final snapshot =
+          await FirebaseFirestore.instance.collection('challenges').get();
+
+      if (snapshot.docs.isEmpty) {
+        setState(() {
+          _isLoadingChallenges = false;
+        });
+        return;
+      }
+
+      final challenges = snapshot.docs.map((doc) {
+        final data = doc.data();
+        return {
+          'id': doc.id,
+          'text': data['title'] ?? 'Tanpa Judul',
+          'icon': _getIconForCategory(data['category'] ?? ''),
+        };
+      }).toList();
+
+      setState(() {
+        _challengeOptions = challenges;
+        if (_challengeOptions.isNotEmpty) {
+          _selectedChallenge = _challengeOptions[0];
+        }
+        _isLoadingChallenges = false;
+      });
+    } catch (e) {
+      print("Error fetching challenges: $e");
+      setState(() {
+        _isLoadingChallenges = false;
+      });
+    }
+  }
 
   @override
   void initState() {
     super.initState();
-    // Inisialisasi state
-    _selectedChallenge = _challengeOptions[0];
+    _fetchChallenges();
   }
 
   @override
   Widget build(BuildContext context) {
+    // ... (Fungsi build dan BottomNav tidak berubah)
+    final String? currentUserUid = FirebaseAuth.instance.currentUser?.uid;
+
     return Scaffold(
       backgroundColor: const Color(0xFF1A1A1A),
-      // ... (Bottom Navigation Bar & FAB tetap sama) ...
       floatingActionButtonLocation: FloatingActionButtonLocation.centerDocked,
       floatingActionButton: FloatingActionButton(
         onPressed: () {
-          // <-- UBAH INI
           Navigator.push(
             context,
             MaterialPageRoute(
@@ -66,7 +101,13 @@ class _LeaderboardPageState extends State<LeaderboardPage> {
             IconButton(
               icon: const Icon(Icons.home, color: Colors.grey),
               onPressed: () {
-                Navigator.popUntil(context, (route) => route.isFirst);
+                Navigator.pushReplacement(
+                  context,
+                  PageRouteBuilder(
+                    pageBuilder: (context, a, b) => const HomePage(),
+                    transitionDuration: Duration.zero,
+                  ),
+                );
               },
             ),
             IconButton(
@@ -77,12 +118,10 @@ class _LeaderboardPageState extends State<LeaderboardPage> {
             IconButton(
               icon: const Icon(Icons.notifications_none, color: Colors.grey),
               onPressed: () {
-                // <-- UBAH INI
                 Navigator.pushReplacement(
                   context,
                   PageRouteBuilder(
-                    pageBuilder: (context, animation1, animation2) =>
-                        const NotificationPage(),
+                    pageBuilder: (context, a, b) => const NotificationPage(),
                     transitionDuration: Duration.zero,
                   ),
                 );
@@ -94,8 +133,7 @@ class _LeaderboardPageState extends State<LeaderboardPage> {
                 Navigator.pushReplacement(
                   context,
                   PageRouteBuilder(
-                    pageBuilder: (context, animation1, animation2) =>
-                        const ProfilePage(),
+                    pageBuilder: (context, a, b) => const ProfilePage(),
                     transitionDuration: Duration.zero,
                   ),
                 );
@@ -105,68 +143,115 @@ class _LeaderboardPageState extends State<LeaderboardPage> {
         ),
       ),
       body: SafeArea(
-        child: SingleChildScrollView(
-          child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 20.0),
-            child: Column(
-              children: [
-                _buildAppBar(context),
-                const SizedBox(height: 24),
-                _buildChallengeDropdown(), // Panggil widget dropdown yang sudah diperbarui
-                const SizedBox(height: 30),
-                _buildPodium(), // Panggil widget podium yang sudah diperbarui
-                const SizedBox(height: 30),
-                _buildRankItem(
-                    rank: 4,
-                    name: 'Siti Nurhaliza',
-                    details: '26/30 hari',
-                    points: '275',
-                    isUp: true),
-                _buildRankItem(
-                    rank: 5,
-                    name: 'Erlich Bachman (Anda)',
-                    details: '25/30 hari',
-                    points: '268',
-                    isUser: true,
-                    isUp: false),
-                _buildRankItem(
-                    rank: 6,
-                    name: 'Zahra Kamila',
-                    details: '24/30 hari',
-                    points: '252'),
-              ],
-            ),
-          ),
+        child: NestedScrollView(
+          headerSliverBuilder: (context, innerBoxIsScrolled) {
+            return [
+              SliverToBoxAdapter(
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 20.0),
+                  child: Column(
+                    children: [
+                      _buildAppBar(context),
+                      const SizedBox(height: 24),
+                      _buildChallengeDropdown(), // <-- Panggil fungsi yang kita modif
+                      const SizedBox(height: 30),
+                    ],
+                  ),
+                ),
+              ),
+            ];
+          },
+          // ... (StreamBuilder dan body sisanya tidak berubah)
+          body: _isLoadingChallenges
+              ? const Center(child: CircularProgressIndicator())
+              : _selectedChallenge == null
+                  ? const Center(
+                      child: Text(
+                      'Belum ada challenge.',
+                      style: TextStyle(color: Colors.grey),
+                    ))
+                  : StreamBuilder<QuerySnapshot>(
+                      stream: FirebaseFirestore.instance
+                          .collection('participants')
+                          .where('challengeId',
+                              isEqualTo: _selectedChallenge!['id'])
+                          .orderBy('score', descending: true)
+                          .snapshots(),
+                      builder: (context, snapshot) {
+                        if (snapshot.connectionState ==
+                            ConnectionState.waiting) {
+                          return const Center(child: CircularProgressIndicator());
+                        }
+                        if (snapshot.hasError) {
+                          return const Center(
+                              child: Text('Error',
+                                  style: TextStyle(color: Colors.white)));
+                        }
+                        if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
+                          return const Center(
+                              child: Text('Belum ada peserta di challenge ini.',
+                                  style: TextStyle(color: Colors.grey)));
+                        }
+
+                        final participants = snapshot.data!.docs;
+                        final List<DocumentSnapshot> podiumUsers =
+                            participants.length >= 3
+                                ? participants.sublist(0, 3)
+                                : participants;
+                        final List<DocumentSnapshot> listUsers =
+                            participants.length > 3
+                                ? participants.sublist(3)
+                                : [];
+
+                        return ListView(
+                          padding: const EdgeInsets.symmetric(horizontal: 20.0),
+                          children: [
+                            _buildDynamicPodium(podiumUsers),
+                            const SizedBox(height: 30),
+                            const Align(
+                              alignment: Alignment.centerLeft,
+                              child: Text(
+                                'Peringkat Lainnya',
+                                style: TextStyle(
+                                    color: Colors.white,
+                                    fontSize: 18,
+                                    fontWeight: FontWeight.bold),
+                              ),
+                            ),
+                            const SizedBox(height: 16),
+                            ...listUsers.map((userDoc) {
+                              final data =
+                                  userDoc.data() as Map<String, dynamic>;
+                              final int rank = participants.indexWhere(
+                                      (doc) => doc.id == userDoc.id) +
+                                  1;
+
+                              return _buildRankItem(
+                                rank: rank,
+                                name: data['displayName'] ?? 'User',
+                                details: '${data['score'] ?? 0} Poin',
+                                points: '${data['score'] ?? 0}',
+                                picUrl: data['photoUrl'] ??
+                                    'https://placehold.co/100',
+                                isUser: data['userId'] == currentUserUid,
+                              );
+                            }).toList(),
+                          ],
+                        );
+                      },
+                    ),
         ),
       ),
     );
   }
 
-  // ... (_buildAppBar tetap sama) ...
   Widget _buildAppBar(BuildContext context) {
+    // ... (Tidak berubah)
     return Padding(
       padding: const EdgeInsets.only(top: 16.0),
       child: Row(
-        // 1. Ganti alignment menjadi center
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          // 2. Hapus Tombol Kiri (GestureDetector)
-          /*
-          GestureDetector(
-            onTap: () => Navigator.pop(context),
-            child: Container(
-              padding: const EdgeInsets.all(8),
-              decoration: BoxDecoration(
-                color: const Color(0xFF2C2C2E),
-                borderRadius: BorderRadius.circular(12),
-              ),
-              child: const Icon(Icons.arrow_back_ios_new,
-                  color: Colors.white, size: 20),
-            ),
-          ),
-          */
-
-          // Bagian Judul (Tetap)
           Row(
             children: [
               Icon(Icons.emoji_events, color: Colors.yellow.shade600, size: 28),
@@ -178,144 +263,224 @@ class _LeaderboardPageState extends State<LeaderboardPage> {
                       fontWeight: FontWeight.bold)),
             ],
           ),
-
-          // 3. Hapus Tombol Kanan (Container)
-          /*
-          Container(
-            padding: const EdgeInsets.all(8),
-            decoration: BoxDecoration(
-              color: const Color(0xFF2C2C2E),
-              borderRadius: BorderRadius.circular(12),
-            ),
-            child: const Icon(Icons.more_horiz, color: Colors.white, size: 20),
-          ),
-          */
-          // AKHIR DARI BAGIAN YANG HILANG
         ],
       ),
     );
-  } // <--- TAMBAHKAN KURUNG KURAWAL PENUTUP INI
+  }
 
-  // 3. Ubah _buildChallengeDropdown (VERSI PERBAIKAN)
+  // --- 1. MODIFIKASI FUNGSI DROPDOWN INI ---
   Widget _buildChallengeDropdown() {
-    // GANTI Row dengan Align agar tidak error layout
-    return Align(
-      alignment: Alignment.centerLeft, // Posisikan di kiri
-      child: Container(
-        // Kita bungkus dengan Container agar bisa memberi padding & dekorasi
+    if (_isLoadingChallenges) {
+      return Container(
+        // ... (Tampilan loading tetap sama)
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 18),
         decoration: BoxDecoration(
           color: const Color(0xFF2C2C2E),
           borderRadius: BorderRadius.circular(16),
         ),
-        child: DropdownButtonFormField<Map<String, dynamic>>(
-          value: _selectedChallenge,
-          items: _challengeOptions.map((Map<String, dynamic> option) {
-            return DropdownMenuItem<Map<String, dynamic>>(
-              value: option,
-              // Ini adalah tampilan item di dalam MENU
-              child: Row(
-                children: [
-                  Icon(option['icon'] as IconData,
-                      color: Colors.white, size: 20),
-                  const SizedBox(width: 12),
-                  Text(
-                    option['text'] as String,
-                    style: const TextStyle(
-                      color: Colors.white,
+        child: const Row(
+          children: [
+            SizedBox(
+                width: 20,
+                height: 20,
+                child: CircularProgressIndicator(
+                    strokeWidth: 2, color: Colors.white)),
+            SizedBox(width: 12),
+            Text("Memuat challenges...",
+                style: TextStyle(color: Colors.white70)),
+          ],
+        ),
+      );
+    }
+
+    // GANTI JADI TOMBOL PALSU
+    return GestureDetector(
+      onTap: () {
+        // Panggil fungsi untuk memunculkan modal
+        _showChallengePicker(context);
+      },
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+        decoration: BoxDecoration(
+          color: const Color(0xFF2C2C2E),
+          borderRadius: BorderRadius.circular(16),
+        ),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            // Tampilkan challenge yang dipilih
+            _selectedChallenge == null
+                ? Text( // Teks default
+                    'Pilih Challenge',
+                    style: TextStyle(
+                      color: Colors.grey.shade600,
                       fontSize: 16,
                       fontWeight: FontWeight.w600,
                     ),
-                  ), // <- Kurung tutup Text
-                ],
-              ), // <- Kurung tutup Row
-            ); // <- Kurung tutup DropdownMenuItem
-          }).toList(),
-          onChanged: (newValue) {
-            setState(() {
-              _selectedChallenge = newValue!;
-            });
-          },
-          // Ini adalah tampilan item saat TERPILIH (di "tombol")
-          selectedItemBuilder: (BuildContext context) {
-            return _challengeOptions.map((Map<String, dynamic> option) {
-              return Row(
-                children: [
-                  Icon(option['icon'] as IconData,
-                      color: Colors.white, size: 20),
-                  const SizedBox(width: 12),
-                  Text(
-                    option['text'] as String,
-                    style: const TextStyle(
-                      color: Colors.white,
-                      fontSize: 16,
-                      fontWeight: FontWeight.w600,
-                    ),
+                  )
+                : Row( // Tampilkan ikon dan nama
+                    children: [
+                      Icon(
+                        _selectedChallenge!['icon'] as IconData,
+                        color: Colors.white,
+                        size: 20,
+                      ),
+                      const SizedBox(width: 12),
+                      Text(
+                        _selectedChallenge!['text'] as String,
+                        style: const TextStyle(
+                            color: Colors.white,
+                            fontSize: 16,
+                            fontWeight: FontWeight.w600),
+                      ),
+                    ],
                   ),
-                ],
-              );
-            }).toList();
-          },
-          // Styling
-          decoration: InputDecoration(
-            // Hapus prefixIcon, karena sudah kita tambahkan manual di builder
-            // Beri padding agar icon & text tidak mepet ke kiri
-            contentPadding:
-                const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
-            border: InputBorder.none, // Hapus border bawaan
-            enabledBorder: InputBorder.none,
-            focusedBorder: InputBorder.none,
-          ),
-          icon: const Icon(Icons.arrow_drop_down,
-              color: Colors.white), // Ikon panah
-          dropdownColor: const Color(0xFF2C2C2E), // Warna background menu
-          // ----------------------------------------------------
-          menuMaxHeight:
-              200, // Opsional: Batasi tinggi menu jika terlalu banyak item
+            // Ikon panah
+            const Icon(Icons.arrow_drop_down, color: Colors.white),
+          ],
         ),
       ),
     );
   }
 
-  // 4. Perbaiki _buildPodium dengan Expanded
-  Widget _buildPodium() {
+  // --- 2. TAMBAHKAN FUNGSI BARU INI (UNTUK MODAL) ---
+  void _showChallengePicker(BuildContext context) {
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: const Color(0xFF1C1C1E), // Warna background modal
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (context) {
+        return Container(
+          padding: const EdgeInsets.all(16.0),
+          height: MediaQuery.of(context).size.height * 0.5, // Setengah layar
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // Judul Modal
+              const Padding(
+                padding: EdgeInsets.all(8.0),
+                child: Text(
+                  'Pilih Challenge',
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontSize: 20,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ),
+              const Divider(color: Color(0xFF2C2C2E)),
+              // List Pilihan
+              Expanded(
+                child: ListView.builder(
+                  itemCount: _challengeOptions.length,
+                  itemBuilder: (context, index) {
+                    final option = _challengeOptions[index];
+                    final isSelected =
+                        _selectedChallenge?['id'] == option['id'];
+
+                    return ListTile(
+                      leading: Icon(
+                        option['icon'] as IconData,
+                        color: isSelected ? const Color(0xFF007AFF) : Colors.white,
+                      ),
+                      title: Text(
+                        option['text'] as String,
+                        style: TextStyle(
+                          color: isSelected ? const Color(0xFF007AFF) : Colors.white,
+                          fontWeight:
+                              isSelected ? FontWeight.bold : FontWeight.normal,
+                        ),
+                      ),
+                      onTap: () {
+                        // Set state & tutup modal
+                        setState(() {
+                          _selectedChallenge = option;
+                        });
+                        Navigator.pop(context);
+                      },
+                    );
+                  },
+                ),
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
+  // --- Sisa Widget (Podium & List) Tidak Berubah ---
+  Widget _buildDynamicPodium(List<DocumentSnapshot> podiumUsers) {
+    // ... (Kode _buildDynamicPodium tidak berubah)
+    DocumentSnapshot? rank1User;
+    DocumentSnapshot? rank2User;
+    DocumentSnapshot? rank3User;
+
+    if (podiumUsers.isNotEmpty) {
+      rank1User = podiumUsers[0];
+    }
+    if (podiumUsers.length > 1) {
+      rank2User = podiumUsers[1];
+    }
+    if (podiumUsers.length > 2) {
+      rank3User = podiumUsers[2];
+    }
+
+    Map<String, dynamic> getData(DocumentSnapshot? doc) {
+      if (doc != null && doc.exists) {
+        return doc.data() as Map<String, dynamic>;
+      }
+      return {};
+    }
+
+    final dataRank1 = getData(rank1User);
+    final dataRank2 = getData(rank2User);
+    final dataRank3 = getData(rank3User);
+
     return Row(
       crossAxisAlignment: CrossAxisAlignment.end,
-      mainAxisAlignment: MainAxisAlignment.center,
+      mainAxisAlignment: MainAxisAlignment.spaceAround,
       children: [
-        // Bungkus setiap anggota podium dengan Expanded
         Expanded(
-          child: _buildPodiumMember(
-            rank: 2,
-            name: 'Fatimah Azzahra',
-            points: '295 pts',
-            picUrl: 'https://placehold.co/100x100/4A90E2/FFFFFF?text=FA',
-            borderColor: Colors.grey.shade400,
-          ),
+          child: rank2User != null
+              ? _buildPodiumMember(
+                  rank: 2,
+                  name: dataRank2['displayName'] ?? 'User',
+                  points: '${dataRank2['score'] ?? 0} pts',
+                  picUrl: dataRank2['photoUrl'] ?? 'https://placehold.co/100',
+                  borderColor: Colors.grey.shade400,
+                )
+              : Container(),
         ),
         Expanded(
-          child: _buildPodiumMember(
-            rank: 1,
-            name: 'Ahmad Ridho',
-            points: '298 pts',
-            picUrl: 'https://placehold.co/100x100/F5A623/FFFFFF?text=AR',
-            borderColor: Colors.yellow.shade600,
-            isWinner: true,
-          ),
+          child: rank1User != null
+              ? _buildPodiumMember(
+                  rank: 1,
+                  name: dataRank1['displayName'] ?? 'User',
+                  points: '${dataRank1['score'] ?? 0} pts',
+                  picUrl: dataRank1['photoUrl'] ?? 'https://placehold.co/100',
+                  borderColor: Colors.yellow.shade600,
+                  isWinner: true,
+                )
+              : Container(),
         ),
         Expanded(
-          child: _buildPodiumMember(
-            rank: 3,
-            name: 'Muhammad Ilham',
-            points: '287 pts',
-            picUrl: 'https://placehold.co/100x100/D0021B/FFFFFF?text=MI',
-            borderColor: Colors.brown.shade400,
-          ),
+          child: rank3User != null
+              ? _buildPodiumMember(
+                  rank: 3,
+                  name: dataRank3['displayName'] ?? 'User',
+                  points: '${dataRank3['score'] ?? 0} pts',
+                  picUrl: dataRank3['photoUrl'] ?? 'https://placehold.co/100',
+                  borderColor: Colors.brown.shade400,
+                )
+              : Container(),
         ),
       ],
     );
   }
 
-  // ... (_buildPodiumMember dan _buildRankItem tetap sama) ...
   Widget _buildPodiumMember({
     required int rank,
     required String name,
@@ -324,10 +489,10 @@ class _LeaderboardPageState extends State<LeaderboardPage> {
     required Color borderColor,
     bool isWinner = false,
   }) {
+    // ... (Kode _buildPodiumMember tidak berubah)
     double avatarRadius = isWinner ? 50 : 40;
     double verticalPadding = isWinner ? 0 : 20;
 
-    // Hapus padding horizontal dari sini agar Expanded bisa bekerja
     return Padding(
       padding: EdgeInsets.only(bottom: verticalPadding),
       child: Column(
@@ -349,9 +514,23 @@ class _LeaderboardPageState extends State<LeaderboardPage> {
                         ]
                       : [],
                 ),
-                child: CircleAvatar(
-                  radius: avatarRadius,
-                  backgroundImage: NetworkImage(picUrl),
+               child: CachedNetworkImage(
+                  imageUrl: picUrl,
+                  imageBuilder: (context, imageProvider) => CircleAvatar(
+                    radius: avatarRadius, // Gunakan variabel avatarRadius
+                    backgroundImage: imageProvider,
+                  ),
+                  placeholder: (context, url) => CircleAvatar(
+                    radius: avatarRadius,
+                    backgroundColor: const Color(0xFF2C2C2E),
+                    child: const CircularProgressIndicator(
+                        strokeWidth: 2, color: Colors.grey),
+                  ),
+                  errorWidget: (context, url, error) => CircleAvatar(
+                    radius: avatarRadius,
+                    backgroundColor: const Color(0xFF2C2C2E),
+                    child: const Icon(Icons.person, color: Colors.grey),
+                  ),
                 ),
               ),
               if (isWinner)
@@ -389,7 +568,7 @@ class _LeaderboardPageState extends State<LeaderboardPage> {
           ),
           const SizedBox(height: 20),
           Text(name,
-              textAlign: TextAlign.center, // Tambahkan text align center
+              textAlign: TextAlign.center,
               style: const TextStyle(
                   color: Colors.white,
                   fontSize: 14,
@@ -410,9 +589,11 @@ class _LeaderboardPageState extends State<LeaderboardPage> {
     required String name,
     required String details,
     required String points,
+    required String picUrl,
     bool isUser = false,
     bool? isUp,
   }) {
+    // ... (Kode _buildRankItem tidak berubah)
     return Container(
       margin: const EdgeInsets.only(bottom: 12),
       padding: const EdgeInsets.all(16),
@@ -433,10 +614,9 @@ class _LeaderboardPageState extends State<LeaderboardPage> {
                 color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold),
           ),
           const SizedBox(width: 16),
-          const CircleAvatar(
+          CircleAvatar(
             radius: 20,
-            backgroundImage:
-                NetworkImage('https://placehold.co/100x100/555555/FFFFFF?text=S'),
+            backgroundImage: NetworkImage(picUrl),
           ),
           const SizedBox(width: 12),
           Expanded(
@@ -464,16 +644,8 @@ class _LeaderboardPageState extends State<LeaderboardPage> {
                 fontSize: 18,
                 fontWeight: FontWeight.bold),
           ),
-          const SizedBox(width: 8),
-          if (isUp != null)
-            Icon(
-              isUp ? Icons.arrow_drop_up : Icons.arrow_drop_down,
-              color: isUp ? Colors.green : Colors.red,
-              size: 24,
-            ),
         ],
       ),
     );
   }
 }
-

@@ -1,8 +1,12 @@
 plugins {
     id("com.android.application")
+    // START: FlutterFire Configuration
+    id("com.google.gms.google-services")
+    // END: FlutterFire Configuration
     id("kotlin-android")
     // The Flutter Gradle Plugin must be applied after the Android and Kotlin Gradle plugins.
     id("dev.flutter.flutter-gradle-plugin")
+    
 }
 
 android {
@@ -41,4 +45,11 @@ android {
 
 flutter {
     source = "../.."
+}
+dependencies {
+    
+    implementation(platform("com.google.firebase:firebase-bom:33.1.0"))
+    implementation("com.google.firebase:firebase-auth")
+
+    // ... dependensi lain yang mungkin sudah ada sebelumnya ...
 }

@@ -16,11 +16,18 @@ class MyChallengeListPage extends StatefulWidget {
 class _MyChallengeListPageState extends State<MyChallengeListPage> {
   User? _user;
   String _currentFilter = 'All';
-
+  final TextEditingController _searchController = TextEditingController();
   @override
   void initState() {
     super.initState();
     _user = FirebaseAuth.instance.currentUser;
+  }
+
+  @override
+  void dispose() {
+    // Bersihkan controller saat halaman ditutup agar tidak memakan memori
+    _searchController.dispose();
+    super.dispose();
   }
 
   // --- FUNGSI KELUAR CHALLENGE (Dipindahkan kesini) ---
@@ -31,11 +38,23 @@ class _MyChallengeListPageState extends State<MyChallengeListPage> {
       context: context,
       builder: (context) => AlertDialog(
         backgroundColor: const Color(0xFF2C2C2E),
-        title: const Text('Keluar Challenge', style: TextStyle(color: Colors.white)),
-        content: const Text('Yakin ingin keluar? Progresmu akan hilang.', style: TextStyle(color: Colors.white70)),
+        title: const Text(
+          'Keluar Challenge',
+          style: TextStyle(color: Colors.white),
+        ),
+        content: const Text(
+          'Yakin ingin keluar? Progresmu akan hilang.',
+          style: TextStyle(color: Colors.white70),
+        ),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(context, false), child: const Text('Batal')),
-          TextButton(onPressed: () => Navigator.pop(context, true), child: const Text('Keluar', style: TextStyle(color: Colors.red))),
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('Batal'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(context, true),
+            child: const Text('Keluar', style: TextStyle(color: Colors.red)),
+          ),
         ],
       ),
     );
@@ -44,20 +63,31 @@ class _MyChallengeListPageState extends State<MyChallengeListPage> {
       try {
         final batch = FirebaseFirestore.instance.batch();
         final participantDocId = '${_user!.uid}_$challengeId';
-        
+
         // Hapus data partisipan
-        batch.delete(FirebaseFirestore.instance.collection('participants').doc(participantDocId));
-        
+        batch.delete(
+          FirebaseFirestore.instance
+              .collection('participants')
+              .doc(participantDocId),
+        );
+
         // Update data challenge (kurangi member)
-        batch.update(FirebaseFirestore.instance.collection('challenges').doc(challengeId), {
-          'members': FieldValue.increment(-1),
-          'participantUIDs': FieldValue.arrayRemove([_user!.uid]),
-        });
+        batch.update(
+          FirebaseFirestore.instance.collection('challenges').doc(challengeId),
+          {
+            'members': FieldValue.increment(-1),
+            'participantUIDs': FieldValue.arrayRemove([_user!.uid]),
+          },
+        );
 
         await batch.commit();
-        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Berhasil keluar challenge.")));
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text("Berhasil keluar challenge.")),
+        );
       } catch (e) {
-        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text("Gagal: $e")));
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text("Gagal: $e")));
       }
     }
   }
@@ -73,15 +103,10 @@ class _MyChallengeListPageState extends State<MyChallengeListPage> {
           icon: const Icon(Icons.arrow_back_ios_new, color: Colors.white),
           onPressed: () => Navigator.pop(context),
         ),
-        title: const Text('Daily Progress', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
-        actions: [
-          const CircleAvatar(
-             // Ganti dengan foto profil user kalau mau
-             backgroundColor: Colors.blueAccent,
-             child: Icon(Icons.person, color: Colors.white),
-          ),
-          const SizedBox(width: 16),
-        ],
+        title: const Text(
+          'Daily Progress',
+          style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+        ),
       ),
       body: Padding(
         padding: const EdgeInsets.symmetric(horizontal: 20),
@@ -91,18 +116,25 @@ class _MyChallengeListPageState extends State<MyChallengeListPage> {
             const SizedBox(height: 16),
             // Search Bar Dummy
             TextField(
+              controller: _searchController, // Pasang controller
+              onChanged: (value) {
+                setState(() {}); // Rebuild UI setiap kali user mengetik
+              },
               decoration: InputDecoration(
                 hintText: 'Search',
                 hintStyle: TextStyle(color: Colors.grey.shade600),
                 prefixIcon: Icon(Icons.search, color: Colors.grey.shade600),
                 filled: true,
                 fillColor: const Color(0xFF2C2C2E),
-                border: OutlineInputBorder(borderRadius: BorderRadius.circular(30), borderSide: BorderSide.none),
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(30),
+                  borderSide: BorderSide.none,
+                ),
               ),
               style: const TextStyle(color: Colors.white),
             ),
             const SizedBox(height: 20),
-            
+
             // Filter Buttons
             Row(
               children: [
@@ -126,22 +158,55 @@ class _MyChallengeListPageState extends State<MyChallengeListPage> {
                     return const Center(child: CircularProgressIndicator());
                   }
                   if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
-                    return const Center(child: Text("Kamu belum bergabung challenge apapun.", style: TextStyle(color: Colors.grey)));
+                    return const Center(
+                      child: Text(
+                        "Kamu belum bergabung challenge apapun.",
+                        style: TextStyle(color: Colors.grey),
+                      ),
+                    );
                   }
 
-                  final challenges = snapshot.data!.docs;
+                  var challenges = snapshot.data!.docs;
+
+                  // Filter A: Berdasarkan Search Text
+                  if (_searchController.text.isNotEmpty) {
+                    challenges = challenges.where((doc) {
+                      final data = doc.data() as Map<String, dynamic>;
+                      final title = (data['title'] ?? '')
+                          .toString()
+                          .toLowerCase();
+                      final query = _searchController.text.toLowerCase();
+                      return title.contains(
+                        query,
+                      ); // Cek apakah judul mengandung text search
+                    }).toList();
+                  }
+
+                  // Filter B: Berdasarkan Tombol Favorite
+                  if (_currentFilter == 'Favorite') {
+                    challenges = challenges.where((doc) {
+                      final data = doc.data() as Map<String, dynamic>;
+                      final favs = List<String>.from(data['favoritedBy'] ?? []);
+                      return favs.contains(_user?.uid);
+                    }).toList();
+                  }
+
+                  // Cek jika hasil filter kosong
+                  if (challenges.isEmpty) {
+                    return const Center(
+                      child: Text(
+                        "Tidak ada challenge ditemukan.",
+                        style: TextStyle(color: Colors.grey),
+                      ),
+                    );
+                  }
 
                   return ListView.builder(
-                    itemCount: challenges.length,
+                    itemCount: challenges
+                        .length, // Gunakan length dari list yang sudah difilter
                     itemBuilder: (context, index) {
                       final doc = challenges[index];
                       final data = doc.data() as Map<String, dynamic>;
-                      
-                      // Filter Favorit (Client Side)
-                      if (_currentFilter == 'Favorite') {
-                        final favs = List<String>.from(data['favoritedBy'] ?? []);
-                        if (!favs.contains(_user?.uid)) return const SizedBox();
-                      }
 
                       return Padding(
                         padding: const EdgeInsets.only(bottom: 12.0),
@@ -166,7 +231,8 @@ class _MyChallengeListPageState extends State<MyChallengeListPage> {
                               Navigator.push(
                                 context,
                                 MaterialPageRoute(
-                                  builder: (context) => ChallengeDetailPage(challengeId: doc.id),
+                                  builder: (context) =>
+                                      ChallengeDetailPage(challengeId: doc.id),
                                 ),
                               );
                             },
@@ -175,33 +241,52 @@ class _MyChallengeListPageState extends State<MyChallengeListPage> {
                               decoration: BoxDecoration(
                                 color: const Color(0xFF2C2C2E),
                                 borderRadius: BorderRadius.circular(16),
-                                border: Border.all(color: Colors.grey.withOpacity(0.1)),
+                                border: Border.all(
+                                  color: Colors.grey.withOpacity(0.1),
+                                ),
                               ),
                               child: Row(
                                 children: [
                                   // Ikon Kategori
                                   CircleAvatar(
                                     radius: 24,
-                                    backgroundColor: Colors.blue.withOpacity(0.2),
-                                    child: const Icon(Icons.task_alt, color: Colors.blue), 
+                                    backgroundColor: Colors.blue.withOpacity(
+                                      0.2,
+                                    ),
+                                    child: const Icon(
+                                      Icons.task_alt,
+                                      color: Colors.blue,
+                                    ),
                                   ),
                                   const SizedBox(width: 16),
                                   Expanded(
                                     child: Column(
-                                      crossAxisAlignment: CrossAxisAlignment.start,
+                                      crossAxisAlignment:
+                                          CrossAxisAlignment.start,
                                       children: [
                                         Text(
                                           data['title'] ?? 'Tanpa Judul',
-                                          style: const TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.bold),
+                                          style: const TextStyle(
+                                            color: Colors.white,
+                                            fontSize: 16,
+                                            fontWeight: FontWeight.bold,
+                                          ),
                                         ),
                                         Text(
                                           "Kategori: ${data['category']}",
-                                          style: const TextStyle(color: Colors.grey, fontSize: 12),
+                                          style: const TextStyle(
+                                            color: Colors.grey,
+                                            fontSize: 12,
+                                          ),
                                         ),
                                       ],
                                     ),
                                   ),
-                                  const Icon(Icons.arrow_forward_ios, color: Colors.grey, size: 16),
+                                  const Icon(
+                                    Icons.arrow_forward_ios,
+                                    color: Colors.grey,
+                                    size: 16,
+                                  ),
                                 ],
                               ),
                             ),
@@ -216,11 +301,14 @@ class _MyChallengeListPageState extends State<MyChallengeListPage> {
           ],
         ),
       ),
-      
+
       // Navigasi Bawah (FAB)
       floatingActionButtonLocation: FloatingActionButtonLocation.centerDocked,
       floatingActionButton: FloatingActionButton(
-        onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (context) => const CreateChallengePage())),
+        onPressed: () => Navigator.push(
+          context,
+          MaterialPageRoute(builder: (context) => const CreateChallengePage()),
+        ),
         backgroundColor: const Color(0xFF007AFF),
         shape: const CircleBorder(),
         child: const Icon(Icons.add, color: Colors.white),
@@ -234,11 +322,16 @@ class _MyChallengeListPageState extends State<MyChallengeListPage> {
     return ElevatedButton(
       onPressed: () => setState(() => _currentFilter = text),
       style: ElevatedButton.styleFrom(
-        backgroundColor: isActive ? const Color(0xFF007AFF) : const Color(0xFF2C2C2E),
+        backgroundColor: isActive
+            ? const Color(0xFF007AFF)
+            : const Color(0xFF2C2C2E),
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
         padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
       ),
-      child: Text(text, style: TextStyle(color: isActive ? Colors.white : Colors.grey)),
+      child: Text(
+        text,
+        style: TextStyle(color: isActive ? Colors.white : Colors.grey),
+      ),
     );
   }
 }

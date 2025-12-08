@@ -11,8 +11,6 @@ import 'overview_page.dart';
 import 'productivity_page.dart';
 import 'book_page.dart';
 
-
-
 // --- 2. UBAH JADI STATEFULWIDGET ---
 class HomePage extends StatefulWidget {
   const HomePage({super.key});
@@ -47,10 +45,11 @@ class _HomePageState extends State<HomePage> {
       floatingActionButtonLocation: FloatingActionButtonLocation.centerDocked,
       floatingActionButton: FloatingActionButton(
         onPressed: () {
-           Navigator.push(
+          Navigator.push(
             context,
             MaterialPageRoute(
-                builder: (context) => const CreateChallengePage()),
+              builder: (context) => const CreateChallengePage(),
+            ),
           );
         },
         backgroundColor: const Color(0xFF007AFF),
@@ -84,7 +83,7 @@ class _HomePageState extends State<HomePage> {
             IconButton(
               icon: const Icon(Icons.notifications_none, color: Colors.grey),
               onPressed: () {
-                 Navigator.pushReplacement(
+                Navigator.pushReplacement(
                   context,
                   PageRouteBuilder(
                     pageBuilder: (context, a, b) => const NotificationPage(),
@@ -121,11 +120,10 @@ class _HomePageState extends State<HomePage> {
 
               // --- 4. GANTI BLOK TEKS SAMBUTAN ---
               _buildWelcomeText(), // Panggil widget dinamis baru
+
               // ---------------------------------
-              
               const SizedBox(height: 20),
 
-             
               // Kartu Daily Progress
               _buildDailyProgressCard(context),
               const SizedBox(height: 30),
@@ -162,41 +160,43 @@ class _HomePageState extends State<HomePage> {
                   return GridView.builder(
                     gridDelegate:
                         const SliverGridDelegateWithFixedCrossAxisCount(
-                      crossAxisCount: 2,
-                      crossAxisSpacing: 15,
-                      mainAxisSpacing: 15,
-                      childAspectRatio: 1 / 1.0,
-                    ),
+                          crossAxisCount: 2,
+                          crossAxisSpacing: 15,
+                          mainAxisSpacing: 15,
+                          childAspectRatio: 1 / 1.0,
+                        ),
                     itemCount: categories.length,
                     shrinkWrap: true,
                     physics: const NeverScrollableScrollPhysics(),
                     itemBuilder: (context, index) {
                       final categoryDoc = categories[index];
-                      final data =
-                          categoryDoc.data() as Map<String, dynamic>;
+                      final data = categoryDoc.data() as Map<String, dynamic>;
 
                       final categoryName = data['name'] ?? 'Tanpa Nama';
                       final iconString = data['icon'] ?? 'default';
 
                       return GestureDetector(
                         onTap: () {
-                         if (categoryName.toLowerCase() == 'reading' || categoryName.toLowerCase() == 'buku') {
-      // Arahkan ke Halaman API Buku (UAS REQUIREMENT)
-      Navigator.push(
-        context,
-        MaterialPageRoute(builder: (context) => const BookPage()), // <-- Pastikan import book_page.dart
-      );
-    } else {
-                          Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                              builder: (context) => CategoryDetailPage(
-                                categoryName: categoryName,
+                          if (categoryName.toLowerCase() == 'reading' ||
+                              categoryName.toLowerCase() == 'buku') {
+                            // Arahkan ke Halaman API Buku (UAS REQUIREMENT)
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (context) => const BookPage(),
+                              ), // <-- Pastikan import book_page.dart
+                            );
+                          } else {
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (context) => CategoryDetailPage(
+                                  categoryName: categoryName,
+                                ),
                               ),
-        ),
-      );
-    }
-  },
+                            );
+                          }
+                        },
                         child: _buildCategoryCard(
                           icon: _getIconForCategory(iconString),
                           iconColor: _getColorForCategory(iconString),
@@ -221,10 +221,7 @@ class _HomePageState extends State<HomePage> {
       return const Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(
-            'Hello,',
-            style: TextStyle(color: Colors.white70, fontSize: 22),
-          ),
+          Text('Hello,', style: TextStyle(color: Colors.white70, fontSize: 22)),
           Text(
             'Guest', // Tampilkan default
             style: TextStyle(
@@ -272,7 +269,7 @@ class _HomePageState extends State<HomePage> {
   }
   // ----------------------------------
 
-Widget _buildAppBar(BuildContext context) {
+  Widget _buildAppBar(BuildContext context) {
     return Padding(
       padding: const EdgeInsets.only(top: 16.0),
       child: Row(
@@ -287,12 +284,11 @@ Widget _buildAppBar(BuildContext context) {
               fontWeight: FontWeight.bold,
             ),
           ),
-          
+
           // --- AVATAR DINAMIS (VERSI LEBIH AMAN) ---
           StreamBuilder<DocumentSnapshot>(
             stream: _userStream, // Gunakan stream yang sudah ada
             builder: (context, snapshot) {
-              
               String photoUrl = '';
               String placeholderText = '?';
 
@@ -301,9 +297,11 @@ Widget _buildAppBar(BuildContext context) {
                 final data = snapshot.data!.data() as Map<String, dynamic>;
                 photoUrl = data['photoUrl'] ?? ''; // Ambil URL foto
                 final displayName = data['displayName'] ?? '?';
-                placeholderText = displayName.isNotEmpty ? displayName[0].toUpperCase() : '?';
+                placeholderText = displayName.isNotEmpty
+                    ? displayName[0].toUpperCase()
+                    : '?';
               }
-              // Jika loading, error, atau photoUrl kosong, 
+              // Jika loading, error, atau photoUrl kosong,
               // 'photoUrl' akan kosong.
 
               // Tampilkan CircleAvatar-nya
@@ -312,12 +310,13 @@ Widget _buildAppBar(BuildContext context) {
                   const SizedBox(width: 10),
                   CircleAvatar(
                     radius: 20,
-                    backgroundColor: const Color(0xFF555555), // Warna background
+                    backgroundColor: const Color(
+                      0xFF555555,
+                    ), // Warna background
                     // Jika photoUrl TIDAK KOSONG, gunakan NetworkImage
                     backgroundImage: (photoUrl.isNotEmpty)
-                        ? NetworkImage(photoUrl) 
+                        ? NetworkImage(photoUrl)
                         : null, // Jika kosong, jangan pakai background image
-                    
                     // Jika photoUrl KOSONG, tampilkan teks inisial
                     child: (photoUrl.isEmpty)
                         ? Text(
@@ -395,7 +394,9 @@ Widget _buildAppBar(BuildContext context) {
         }
 
         // 4. Handle error atau tidak ada data
-        if (snapshot.hasError || !snapshot.hasData || snapshot.data!.docs.isEmpty) {
+        if (snapshot.hasError ||
+            !snapshot.hasData ||
+            snapshot.data!.docs.isEmpty) {
           // Tampilkan 0% jika user belum join challenge apapun
           return _buildProgressCardUI(
             context: context,
@@ -414,10 +415,10 @@ Widget _buildAppBar(BuildContext context) {
         for (var doc in participantDocs) {
           final data = doc.data() as Map<String, dynamic>? ?? {};
           totalUserProgress += (data['progress'] ?? 0);
-          
+
           // Gunakan field 'challengeDuration' yg kita simpan
           // Jika tidak ada (data lama), anggap durasinya 1
-          totalPossibleProgress += (data['challengeDuration'] ?? 1); 
+          totalPossibleProgress += (data['challengeDuration'] ?? 1);
 
           // Ambil 2 photoUrl pertama untuk avatar
           if (photoUrls.length < 2 && data['photoUrl'] != null) {
@@ -430,9 +431,9 @@ Widget _buildAppBar(BuildContext context) {
         if (totalPossibleProgress > 0) {
           progressValue = totalUserProgress / totalPossibleProgress;
         }
-        
+
         // Pastikan tidak lebih dari 100%
-        progressValue = progressValue.clamp(0.0, 1.0); 
+        progressValue = progressValue.clamp(0.0, 1.0);
 
         String progressPercent = (progressValue * 100).toStringAsFixed(0);
 
@@ -518,9 +519,7 @@ Widget _buildAppBar(BuildContext context) {
                 SizedBox(
                   width: 60,
                   // Tampilkan avatar dinamis
-                  child: Stack(
-                    children: avatarStack,
-                  ),
+                  child: Stack(children: avatarStack),
                 ),
               ],
             ),
@@ -539,8 +538,9 @@ Widget _buildAppBar(BuildContext context) {
             LinearProgressIndicator(
               value: progressValue, // <-- DINAMIS
               backgroundColor: Colors.grey.shade700,
-              valueColor:
-                  const AlwaysStoppedAnimation<Color>(Color(0xFF007AFF)),
+              valueColor: const AlwaysStoppedAnimation<Color>(
+                Color(0xFF007AFF),
+              ),
               borderRadius: BorderRadius.circular(10),
             ),
           ],
@@ -587,7 +587,7 @@ Widget _buildAppBar(BuildContext context) {
 
   IconData _getIconForCategory(String category) {
     // ... (kode _getIconForCategory kamu tidak berubah)
-     switch (category.toLowerCase()) {
+    switch (category.toLowerCase()) {
       case 'ibadah':
         return Icons.mosque_outlined;
       case 'kesehatan':

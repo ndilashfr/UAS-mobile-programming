@@ -24,15 +24,18 @@ class _LeaderboardPageState extends State<LeaderboardPage> {
     if (category.contains('Productivity')) return Icons.check_circle_outline;
     if (category.contains('Reading')) return Icons.bookmark_border_rounded;
     if (category.toLowerCase() == 'ibadah') return Icons.mosque_outlined;
-    if (category.toLowerCase() == 'kesehatan') return Icons.directions_run_outlined;
-    if (category.toLowerCase() == 'produktifitas') return Icons.lightbulb_outline;
+    if (category.toLowerCase() == 'kesehatan')
+      return Icons.directions_run_outlined;
+    if (category.toLowerCase() == 'produktifitas')
+      return Icons.lightbulb_outline;
     return Icons.task_alt;
   }
 
   Future<void> _fetchChallenges() async {
     try {
-      final snapshot =
-          await FirebaseFirestore.instance.collection('challenges').get();
+      final snapshot = await FirebaseFirestore.instance
+          .collection('challenges')
+          .get();
 
       if (snapshot.docs.isEmpty) {
         setState(() {
@@ -84,7 +87,8 @@ class _LeaderboardPageState extends State<LeaderboardPage> {
           Navigator.push(
             context,
             MaterialPageRoute(
-                builder: (context) => const CreateChallengePage()),
+              builder: (context) => const CreateChallengePage(),
+            ),
           );
         },
         backgroundColor: const Color(0xFF007AFF),
@@ -165,81 +169,89 @@ class _LeaderboardPageState extends State<LeaderboardPage> {
           body: _isLoadingChallenges
               ? const Center(child: CircularProgressIndicator())
               : _selectedChallenge == null
-                  ? const Center(
-                      child: Text(
-                      'Belum ada challenge.',
-                      style: TextStyle(color: Colors.grey),
-                    ))
-                  : StreamBuilder<QuerySnapshot>(
-                      stream: FirebaseFirestore.instance
-                          .collection('participants')
-                          .where('challengeId',
-                              isEqualTo: _selectedChallenge!['id'])
-                          .orderBy('score', descending: true)
-                          .snapshots(),
-                      builder: (context, snapshot) {
-                        if (snapshot.connectionState ==
-                            ConnectionState.waiting) {
-                          return const Center(child: CircularProgressIndicator());
-                        }
-                        if (snapshot.hasError) {
-                          return const Center(
-                              child: Text('Error',
-                                  style: TextStyle(color: Colors.white)));
-                        }
-                        if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
-                          return const Center(
-                              child: Text('Belum ada peserta di challenge ini.',
-                                  style: TextStyle(color: Colors.grey)));
-                        }
+              ? const Center(
+                  child: Text(
+                    'Belum ada challenge.',
+                    style: TextStyle(color: Colors.grey),
+                  ),
+                )
+              : StreamBuilder<QuerySnapshot>(
+                  stream: FirebaseFirestore.instance
+                      .collection('participants')
+                      .where(
+                        'challengeId',
+                        isEqualTo: _selectedChallenge!['id'],
+                      )
+                      .orderBy('score', descending: true)
+                      .snapshots(),
+                  builder: (context, snapshot) {
+                    if (snapshot.connectionState == ConnectionState.waiting) {
+                      return const Center(child: CircularProgressIndicator());
+                    }
+                    if (snapshot.hasError) {
+                      return const Center(
+                        child: Text(
+                          'Error',
+                          style: TextStyle(color: Colors.white),
+                        ),
+                      );
+                    }
+                    if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
+                      return const Center(
+                        child: Text(
+                          'Belum ada peserta di challenge ini.',
+                          style: TextStyle(color: Colors.grey),
+                        ),
+                      );
+                    }
 
-                        final participants = snapshot.data!.docs;
-                        final List<DocumentSnapshot> podiumUsers =
-                            participants.length >= 3
-                                ? participants.sublist(0, 3)
-                                : participants;
-                        final List<DocumentSnapshot> listUsers =
-                            participants.length > 3
-                                ? participants.sublist(3)
-                                : [];
+                    final participants = snapshot.data!.docs;
+                    final List<DocumentSnapshot> podiumUsers =
+                        participants.length >= 3
+                        ? participants.sublist(0, 3)
+                        : participants;
+                    final List<DocumentSnapshot> listUsers =
+                        participants.length > 3 ? participants.sublist(3) : [];
 
-                        return ListView(
-                          padding: const EdgeInsets.symmetric(horizontal: 20.0),
-                          children: [
-                            _buildDynamicPodium(podiumUsers),
-                            const SizedBox(height: 30),
-                            const Align(
-                              alignment: Alignment.centerLeft,
-                              child: Text(
-                                'Peringkat Lainnya',
-                                style: TextStyle(
-                                    color: Colors.white,
-                                    fontSize: 18,
-                                    fontWeight: FontWeight.bold),
-                              ),
+                    return ListView(
+                      padding: const EdgeInsets.symmetric(horizontal: 20.0),
+                      children: [
+                        _buildDynamicPodium(podiumUsers),
+                        const SizedBox(height: 30),
+                        const Align(
+                          alignment: Alignment.centerLeft,
+                          child: Text(
+                            'Peringkat Lainnya',
+                            style: TextStyle(
+                              color: Colors.white,
+                              fontSize: 18,
+                              fontWeight: FontWeight.bold,
                             ),
-                            const SizedBox(height: 16),
-                            ...listUsers.map((userDoc) {
-                              final data =
-                                  userDoc.data() as Map<String, dynamic>;
-                              final int rank = participants.indexWhere(
-                                      (doc) => doc.id == userDoc.id) +
-                                  1;
+                          ),
+                        ),
+                        const SizedBox(height: 16),
+                        ...listUsers.map((userDoc) {
+                          final data = userDoc.data() as Map<String, dynamic>;
+                          final int rank =
+                              participants.indexWhere(
+                                (doc) => doc.id == userDoc.id,
+                              ) +
+                              1;
 
-                              return _buildRankItem(
-                                rank: rank,
-                                name: data['displayName'] ?? 'User',
-                                details: '${data['score'] ?? 0} Poin',
-                                points: '${data['score'] ?? 0}',
-                                picUrl: data['photoUrl'] ??
-                                    'https://placehold.co/100',
-                                isUser: data['userId'] == currentUserUid,
-                              );
-                            }).toList(),
-                          ],
-                        );
-                      },
-                    ),
+                          return _buildRankItem(
+                            rank: rank,
+                            name: data['displayName'] ?? 'User',
+                            details: '${data['score'] ?? 0} Poin',
+                            points: '${data['score'] ?? 0}',
+                            picUrl:
+                                data['photoUrl'] ?? 'https://placehold.co/100',
+                            isUser: data['userId'] == currentUserUid,
+                          );
+                        }).toList(),
+                      ],
+                    );
+                  },
+                ),
         ),
       ),
     );
@@ -254,13 +266,15 @@ class _LeaderboardPageState extends State<LeaderboardPage> {
         children: [
           Row(
             children: [
-              Icon(Icons.emoji_events, color: Colors.yellow.shade600, size: 28),
               const SizedBox(width: 8),
-              const Text('Leaderboard',
-                  style: TextStyle(
-                      color: Colors.white,
-                      fontSize: 20,
-                      fontWeight: FontWeight.bold)),
+              const Text(
+                'Leaderboard',
+                style: TextStyle(
+                  color: Colors.white,
+                  fontSize: 20,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
             ],
           ),
         ],
@@ -281,13 +295,18 @@ class _LeaderboardPageState extends State<LeaderboardPage> {
         child: const Row(
           children: [
             SizedBox(
-                width: 20,
-                height: 20,
-                child: CircularProgressIndicator(
-                    strokeWidth: 2, color: Colors.white)),
+              width: 20,
+              height: 20,
+              child: CircularProgressIndicator(
+                strokeWidth: 2,
+                color: Colors.white,
+              ),
+            ),
             SizedBox(width: 12),
-            Text("Memuat challenges...",
-                style: TextStyle(color: Colors.white70)),
+            Text(
+              "Memuat challenges...",
+              style: TextStyle(color: Colors.white70),
+            ),
           ],
         ),
       );
@@ -310,7 +329,8 @@ class _LeaderboardPageState extends State<LeaderboardPage> {
           children: [
             // Tampilkan challenge yang dipilih
             _selectedChallenge == null
-                ? Text( // Teks default
+                ? Text(
+                    // Teks default
                     'Pilih Challenge',
                     style: TextStyle(
                       color: Colors.grey.shade600,
@@ -318,7 +338,8 @@ class _LeaderboardPageState extends State<LeaderboardPage> {
                       fontWeight: FontWeight.w600,
                     ),
                   )
-                : Row( // Tampilkan ikon dan nama
+                : Row(
+                    // Tampilkan ikon dan nama
                     children: [
                       Icon(
                         _selectedChallenge!['icon'] as IconData,
@@ -329,9 +350,10 @@ class _LeaderboardPageState extends State<LeaderboardPage> {
                       Text(
                         _selectedChallenge!['text'] as String,
                         style: const TextStyle(
-                            color: Colors.white,
-                            fontSize: 16,
-                            fontWeight: FontWeight.w600),
+                          color: Colors.white,
+                          fontSize: 16,
+                          fontWeight: FontWeight.w600,
+                        ),
                       ),
                     ],
                   ),
@@ -383,14 +405,19 @@ class _LeaderboardPageState extends State<LeaderboardPage> {
                     return ListTile(
                       leading: Icon(
                         option['icon'] as IconData,
-                        color: isSelected ? const Color(0xFF007AFF) : Colors.white,
+                        color: isSelected
+                            ? const Color(0xFF007AFF)
+                            : Colors.white,
                       ),
                       title: Text(
                         option['text'] as String,
                         style: TextStyle(
-                          color: isSelected ? const Color(0xFF007AFF) : Colors.white,
-                          fontWeight:
-                              isSelected ? FontWeight.bold : FontWeight.normal,
+                          color: isSelected
+                              ? const Color(0xFF007AFF)
+                              : Colors.white,
+                          fontWeight: isSelected
+                              ? FontWeight.bold
+                              : FontWeight.normal,
                         ),
                       ),
                       onTap: () {
@@ -510,11 +537,11 @@ class _LeaderboardPageState extends State<LeaderboardPage> {
                             color: borderColor.withOpacity(0.7),
                             blurRadius: 15,
                             spreadRadius: 3,
-                          )
+                          ),
                         ]
                       : [],
                 ),
-               child: CachedNetworkImage(
+                child: CachedNetworkImage(
                   imageUrl: picUrl,
                   imageBuilder: (context, imageProvider) => CircleAvatar(
                     radius: avatarRadius, // Gunakan variabel avatarRadius
@@ -524,7 +551,9 @@ class _LeaderboardPageState extends State<LeaderboardPage> {
                     radius: avatarRadius,
                     backgroundColor: const Color(0xFF2C2C2E),
                     child: const CircularProgressIndicator(
-                        strokeWidth: 2, color: Colors.grey),
+                      strokeWidth: 2,
+                      color: Colors.grey,
+                    ),
                   ),
                   errorWidget: (context, url, error) => CircleAvatar(
                     radius: avatarRadius,
@@ -538,8 +567,11 @@ class _LeaderboardPageState extends State<LeaderboardPage> {
                   top: -25,
                   left: 0,
                   right: 0,
-                  child: Icon(Icons.emoji_events,
-                      color: Colors.yellow.shade600, size: 30),
+                  child: Icon(
+                    Icons.emoji_events,
+                    color: Colors.yellow.shade600,
+                    size: 30,
+                  ),
                 ),
               Positioned(
                 bottom: -10,
@@ -551,15 +583,19 @@ class _LeaderboardPageState extends State<LeaderboardPage> {
                   decoration: BoxDecoration(
                     color: borderColor,
                     shape: BoxShape.circle,
-                    border: Border.all(color: const Color(0xFF1A1A1A), width: 2),
+                    border: Border.all(
+                      color: const Color(0xFF1A1A1A),
+                      width: 2,
+                    ),
                   ),
                   child: Center(
                     child: Text(
                       '$rank',
                       style: const TextStyle(
-                          color: Colors.white,
-                          fontWeight: FontWeight.bold,
-                          fontSize: 14),
+                        color: Colors.white,
+                        fontWeight: FontWeight.bold,
+                        fontSize: 14,
+                      ),
                     ),
                   ),
                 ),
@@ -567,18 +603,24 @@ class _LeaderboardPageState extends State<LeaderboardPage> {
             ],
           ),
           const SizedBox(height: 20),
-          Text(name,
-              textAlign: TextAlign.center,
-              style: const TextStyle(
-                  color: Colors.white,
-                  fontSize: 14,
-                  fontWeight: FontWeight.w600)),
+          Text(
+            name,
+            textAlign: TextAlign.center,
+            style: const TextStyle(
+              color: Colors.white,
+              fontSize: 14,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
           const SizedBox(height: 4),
-          Text(points,
-              style: TextStyle(
-                  color: Colors.blue.shade300,
-                  fontSize: 16,
-                  fontWeight: FontWeight.bold)),
+          Text(
+            points,
+            style: TextStyle(
+              color: Colors.blue.shade300,
+              fontSize: 16,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
         ],
       ),
     );
@@ -611,13 +653,13 @@ class _LeaderboardPageState extends State<LeaderboardPage> {
           Text(
             '#$rank',
             style: const TextStyle(
-                color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold),
+              color: Colors.white,
+              fontSize: 18,
+              fontWeight: FontWeight.bold,
+            ),
           ),
           const SizedBox(width: 16),
-          CircleAvatar(
-            radius: 20,
-            backgroundImage: NetworkImage(picUrl),
-          ),
+          CircleAvatar(radius: 20, backgroundImage: NetworkImage(picUrl)),
           const SizedBox(width: 12),
           Expanded(
             child: Column(
@@ -626,9 +668,10 @@ class _LeaderboardPageState extends State<LeaderboardPage> {
                 Text(
                   name,
                   style: const TextStyle(
-                      color: Colors.white,
-                      fontSize: 16,
-                      fontWeight: FontWeight.w600),
+                    color: Colors.white,
+                    fontSize: 16,
+                    fontWeight: FontWeight.w600,
+                  ),
                 ),
                 Text(
                   details,
@@ -640,9 +683,10 @@ class _LeaderboardPageState extends State<LeaderboardPage> {
           Text(
             points,
             style: TextStyle(
-                color: isUser ? Colors.white : Colors.blue.shade300,
-                fontSize: 18,
-                fontWeight: FontWeight.bold),
+              color: isUser ? Colors.white : Colors.blue.shade300,
+              fontSize: 18,
+              fontWeight: FontWeight.bold,
+            ),
           ),
         ],
       ),

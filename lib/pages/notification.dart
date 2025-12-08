@@ -39,7 +39,6 @@ class _NotificationPageState extends State<NotificationPage> {
         title: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(Icons.notifications, color: Colors.yellow.shade300, size: 24),
             const SizedBox(width: 8),
             const Text(
               'Notifikasi',

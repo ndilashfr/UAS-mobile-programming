@@ -99,7 +99,8 @@ class _CreateChallengePageState extends State<CreateChallengePage> {
       final DateTime startDate = startTimestamp.toDate();
       final DateTime endDate = startDate.add(Duration(days: duration - 1));
       _selectedDateRange = DateTimeRange(start: startDate, end: endDate);
-    } else if (widget.initialTitle != null || widget.initialDescription != null) {
+    } else if (widget.initialTitle != null ||
+        widget.initialDescription != null) {
       // Autofill dari buku yang dipilih (dari BookDetailPage)
       _namaController.text = widget.initialTitle ?? '';
       _deskripsiController.text = widget.initialDescription ?? '';

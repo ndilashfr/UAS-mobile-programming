@@ -14,7 +14,7 @@ class BookPage extends StatefulWidget {
 class _BookPageState extends State<BookPage> {
   final BookService _bookService = BookService();
   final TextEditingController _searchController = TextEditingController();
-  
+
   // Variabel State (Syarat II.b.3: Loading, Success, Error State)
   List<Book> _books = [];
   bool _isLoading = false;
@@ -64,7 +64,10 @@ class _BookPageState extends State<BookPage> {
           icon: const Icon(Icons.arrow_back_ios_new, color: Colors.white),
           onPressed: () => Navigator.pop(context),
         ),
-        title: const Text('Rekomendasi Buku', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+        title: const Text(
+          'Rekomendasi Buku',
+          style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+        ),
       ),
       body: Padding(
         padding: const EdgeInsets.all(16.0),
@@ -80,9 +83,15 @@ class _BookPageState extends State<BookPage> {
                 prefixIcon: Icon(Icons.search, color: Colors.grey.shade600),
                 filled: true,
                 fillColor: const Color(0xFF2C2C2E),
-                border: OutlineInputBorder(borderRadius: BorderRadius.circular(30), borderSide: BorderSide.none),
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(30),
+                  borderSide: BorderSide.none,
+                ),
                 suffixIcon: IconButton(
-                  icon: const Icon(Icons.arrow_forward, color: Color(0xFF007AFF)),
+                  icon: const Icon(
+                    Icons.arrow_forward,
+                    color: Color(0xFF007AFF),
+                  ),
                   onPressed: () {
                     // Panggil API saat tombol ditekan
                     _fetchBooks(_searchController.text);
@@ -95,9 +104,7 @@ class _BookPageState extends State<BookPage> {
             const SizedBox(height: 20),
 
             // --- HASIL PENCARIAN (List View) ---
-            Expanded(
-              child: _buildBody(),
-            ),
+            Expanded(child: _buildBody()),
           ],
         ),
       ),
@@ -120,7 +127,12 @@ class _BookPageState extends State<BookPage> {
 
     // 3. Empty State
     if (_books.isEmpty) {
-      return const Center(child: Text("Buku tidak ditemukan.", style: TextStyle(color: Colors.grey)));
+      return const Center(
+        child: Text(
+          "Buku tidak ditemukan.",
+          style: TextStyle(color: Colors.grey),
+        ),
+      );
     }
 
     // 4. Success State (Tampilkan List)
@@ -128,68 +140,85 @@ class _BookPageState extends State<BookPage> {
       itemCount: _books.length,
       itemBuilder: (context, index) {
         final book = _books[index];
-        return GestureDetector( // <--- Tambahkan Widget ini
-  onTap: () {
-    // Navigasi ke halaman detail saat buku diklik
-    Navigator.push(
-      context,
-      MaterialPageRoute(
-        builder: (context) => BookDetailPage(book: book), // <-- Panggil halaman baru tadi
-      ),
-    );
-  },
-  child: Card(
-          color: const Color(0xFF2C2C2E),
-          margin: const EdgeInsets.only(bottom: 16),
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-          child: Padding(
-            padding: const EdgeInsets.all(12.0),
-            child: Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                // Cover Buku
-                ClipRRect(
-                  borderRadius: BorderRadius.circular(8),
-                  child: Image.network(
-                    book.thumbnailUrl,
-                    width: 70,
-                    height: 100,
-                    fit: BoxFit.cover,
-                    errorBuilder: (context, error, stackTrace) => 
-                        Container(width: 70, height: 100, color: Colors.grey, child: const Icon(Icons.broken_image)),
+        return GestureDetector(
+          // <--- Tambahkan Widget ini
+          onTap: () {
+            // Navigasi ke halaman detail saat buku diklik
+            Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (context) =>
+                    BookDetailPage(book: book), // <-- Panggil halaman baru tadi
+              ),
+            );
+          },
+          child: Card(
+            color: const Color(0xFF2C2C2E),
+            margin: const EdgeInsets.only(bottom: 16),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: Padding(
+              padding: const EdgeInsets.all(12.0),
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  // Cover Buku
+                  ClipRRect(
+                    borderRadius: BorderRadius.circular(8),
+                    child: Image.network(
+                      book.thumbnailUrl,
+                      width: 70,
+                      height: 100,
+                      fit: BoxFit.cover,
+                      errorBuilder: (context, error, stackTrace) => Container(
+                        width: 70,
+                        height: 100,
+                        color: Colors.grey,
+                        child: const Icon(Icons.broken_image),
+                      ),
+                    ),
                   ),
-                ),
-                const SizedBox(width: 16),
-                // Detail Buku
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        book.title,
-                        maxLines: 2,
-                        overflow: TextOverflow.ellipsis,
-                        style: const TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.bold),
-                      ),
-                      const SizedBox(height: 4),
-                      Text(
-                        book.authors,
-                        style: const TextStyle(color: Colors.blueAccent, fontSize: 13),
-                      ),
-                      const SizedBox(height: 8),
-                      Text(
-                        book.publishedDate,
-                        style: TextStyle(color: Colors.grey.shade500, fontSize: 12),
-                      ),
-                    ],
+                  const SizedBox(width: 16),
+                  // Detail Buku
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          book.title,
+                          maxLines: 2,
+                          overflow: TextOverflow.ellipsis,
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontSize: 16,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                        const SizedBox(height: 4),
+                        Text(
+                          book.authors,
+                          style: const TextStyle(
+                            color: Colors.blueAccent,
+                            fontSize: 13,
+                          ),
+                        ),
+                        const SizedBox(height: 8),
+                        Text(
+                          book.publishedDate,
+                          style: TextStyle(
+                            color: Colors.grey.shade500,
+                            fontSize: 12,
+                          ),
+                        ),
+                      ],
+                    ),
                   ),
-                ),
-              ],
+                ],
+              ),
             ),
           ),
-  ),
         );
-
       },
     );
   }

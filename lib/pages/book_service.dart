@@ -11,7 +11,7 @@ class BookService {
   Future<List<Book>> searchBooks(String query) async {
     // Jika query kosong, default cari buku tentang 'productivity'
     final searchTerm = query.isEmpty ? 'productivity' : query;
-    
+
     final url = Uri.parse('$_baseUrl?q=$searchTerm&maxResults=20');
 
     try {
@@ -33,14 +33,17 @@ class BookService {
         throw ApiException('Gagal memuat buku (kode: ${response.statusCode})');
       }
     } on TimeoutException catch (_) {
-      throw NetworkException('Permintaan melebihi batas waktu. Periksa koneksi internet Anda.');
+      throw NetworkException(
+        'Permintaan melebihi batas waktu. Periksa koneksi internet Anda.',
+      );
     } on SocketException catch (_) {
-      throw NetworkException('Tidak dapat terhubung ke server. Periksa koneksi internet Anda.');
+      throw NetworkException(
+        'Tidak dapat terhubung ke server. Periksa koneksi internet Anda.',
+      );
     } catch (e) {
       throw ApiException('Terjadi kesalahan saat memuat buku: $e');
     }
   }
-
 }
 
 class NetworkException implements Exception {

@@ -11,6 +11,7 @@ Community Challenge App dirancang untuk membuat aktivitas harian lebih menyenang
 Setiap pengguna bisa membuat tantangan pribadi, melacak progresnya, serta berinteraksi dalam komunitas positif. Aplikasi ini kini mendukung pengambilan data dinamis dari internet untuk pengalaman yang lebih kaya.
 
 📄 *Referensi desain & implementasi terdapat dalam [laporan UTS](https://drive.google.com/file/d/1fSrv0ur2etSdsvFXI1fEIvjYkSVpDSOH/view?usp=sharing)* .
+
 📄 *Laporan Hasil Akhir Project [laporan UAS](https://drive.google.com/file/d/1zlf_1wEXrufj3GNqvKyiJbCapPXIafc_/view?usp=sharing)* 
 
 ## 🧩 Fitur-Fitur Utama

@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:syncfusion_flutter_datepicker/datepicker.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-import 'home.dart'; // (Pastikan impor ini ada)
+// (Pastikan impor ini ada)
 
 class CreateChallengePage extends StatefulWidget {
   final DocumentSnapshot? challengeToEdit;
@@ -99,6 +99,17 @@ class _CreateChallengePageState extends State<CreateChallengePage> {
       final DateTime startDate = startTimestamp.toDate();
       final DateTime endDate = startDate.add(Duration(days: duration - 1));
       _selectedDateRange = DateTimeRange(start: startDate, end: endDate);
+    } else if (widget.initialTitle != null || widget.initialDescription != null) {
+      // Autofill dari buku yang dipilih (dari BookDetailPage)
+      _namaController.text = widget.initialTitle ?? '';
+      _deskripsiController.text = widget.initialDescription ?? '';
+      // Category otomatis set ke "Reading" jika ada
+      if (_categoryOptions.isNotEmpty) {
+        _selectedCategoryMap = _categoryOptions.firstWhere(
+          (map) => map['name']?.toLowerCase() == 'reading',
+          orElse: () => _categoryOptions[0],
+        );
+      }
     } else if (_categoryOptions.isNotEmpty) {
       // Set default untuk Mode Create (tapi jangan pilih otomatis)
       // _selectedCategoryMap = _categoryOptions[0]; // <-- Hapus ini agar default-nya "Pilih"

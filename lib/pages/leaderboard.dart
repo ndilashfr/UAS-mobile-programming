@@ -24,10 +24,12 @@ class _LeaderboardPageState extends State<LeaderboardPage> {
     if (category.contains('Productivity')) return Icons.check_circle_outline;
     if (category.contains('Reading')) return Icons.bookmark_border_rounded;
     if (category.toLowerCase() == 'ibadah') return Icons.mosque_outlined;
-    if (category.toLowerCase() == 'kesehatan')
+    if (category.toLowerCase() == 'kesehatan') {
       return Icons.directions_run_outlined;
-    if (category.toLowerCase() == 'produktifitas')
+    }
+    if (category.toLowerCase() == 'produktifitas') {
       return Icons.lightbulb_outline;
+    }
     return Icons.task_alt;
   }
 
@@ -247,7 +249,7 @@ class _LeaderboardPageState extends State<LeaderboardPage> {
                                 data['photoUrl'] ?? 'https://placehold.co/100',
                             isUser: data['userId'] == currentUserUid,
                           );
-                        }).toList(),
+                        }),
                       ],
                     );
                   },
@@ -633,7 +635,6 @@ class _LeaderboardPageState extends State<LeaderboardPage> {
     required String points,
     required String picUrl,
     bool isUser = false,
-    bool? isUp,
   }) {
     // ... (Kode _buildRankItem tidak berubah)
     return Container(

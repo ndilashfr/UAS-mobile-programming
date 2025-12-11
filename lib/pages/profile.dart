@@ -574,7 +574,7 @@ class _ProfilePageState extends State<ProfilePage> {
               });
             },
             activeTrackColor: const Color(0xFF007AFF),
-            activeColor: Colors.white,
+            activeThumbColor: Colors.white,
           ),
         ],
       ),

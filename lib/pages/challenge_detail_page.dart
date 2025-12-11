@@ -105,8 +105,9 @@ class _ChallengeDetailPageState extends State<ChallengeDetailPage> {
           .doc(widget.challengeId);
       final challengeSnapshot = await challengeDocRef.get();
 
-      if (!challengeSnapshot.exists)
+      if (!challengeSnapshot.exists) {
         throw Exception("Challenge tidak ditemukan!");
+      }
       final challengeData = challengeSnapshot.data() as Map<String, dynamic>;
 
       // --- LOGIKA PENCARIAN PEMILIK ---
@@ -192,10 +193,11 @@ class _ChallengeDetailPageState extends State<ChallengeDetailPage> {
         );
       }
     } finally {
-      if (mounted)
+      if (mounted) {
         setState(() {
           _isLoading = false;
         });
+      }
     }
   }
 
@@ -224,14 +226,16 @@ class _ChallengeDetailPageState extends State<ChallengeDetailPage> {
 
       // 1. Ambil data Challenge & Partisipan
       final challengeDoc = await challengeDocRef.get();
-      if (!challengeDoc.exists)
+      if (!challengeDoc.exists) {
         throw Exception("Dokumen challenge tidak ditemukan!");
+      }
       final int duration =
           (challengeDoc.data() as Map<String, dynamic>)['duration'] ?? 1;
 
       final participantDoc = await participantDocRef.get();
-      if (!participantDoc.exists)
+      if (!participantDoc.exists) {
         throw Exception("Kamu belum bergabung challenge ini!");
+      }
 
       final participantData = participantDoc.data() as Map<String, dynamic>;
       final int currentProgress = participantData['progress'] ?? 0;

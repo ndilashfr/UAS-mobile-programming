@@ -1,5 +1,4 @@
 import 'package:community_challenge_app/pages/home.dart';
-import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'register.dart';
 

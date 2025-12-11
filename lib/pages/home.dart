@@ -7,8 +7,6 @@ import 'package:cloud_firestore/cloud_firestore.dart'; // <-- 1. BUTUH INI
 import 'category_detail_page.dart'; // Impor halaman detail kategori
 import 'notification.dart'; // (Pastikan impor ini ada)
 import 'create_challenge.dart'; // (Pastikan impor ini ada)
-import 'overview_page.dart';
-import 'productivity_page.dart';
 import 'book_page.dart';
 
 // --- 2. UBAH JADI STATEFULWIDGET ---

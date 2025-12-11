@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'book_model.dart';
 import 'book_service.dart';
 import 'book_detail_page.dart';
+import '../widgets/error_widgets.dart';
 
 class BookPage extends StatefulWidget {
   const BookPage({super.key});
@@ -39,8 +40,14 @@ class _BookPageState extends State<BookPage> {
         _isLoading = false;
       });
     } catch (e) {
+      String message = 'Terjadi kesalahan. Coba lagi.';
+      if (e is NetworkException || e is ApiException) {
+        message = e.toString();
+      } else {
+        message = e.toString();
+      }
       setState(() {
-        _errorMessage = e.toString();
+        _errorMessage = message;
         _isLoading = false;
       });
     }
@@ -105,20 +112,9 @@ class _BookPageState extends State<BookPage> {
 
     // 2. Error State
     if (_errorMessage != null) {
-      return Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            const Icon(Icons.error_outline, color: Colors.red, size: 60),
-            const SizedBox(height: 16),
-            Text('Terjadi Kesalahan:\n$_errorMessage', textAlign: TextAlign.center, style: const TextStyle(color: Colors.white)),
-            const SizedBox(height: 16),
-            ElevatedButton(
-              onPressed: () => _fetchBooks(_searchController.text),
-              child: const Text("Coba Lagi"),
-            )
-          ],
-        ),
+      return NetworkErrorWidget(
+        message: _errorMessage!,
+        onRetry: () => _fetchBooks(_searchController.text),
       );
     }
 
